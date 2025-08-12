@@ -1,0 +1,19 @@
+
+name: build-stls
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      # NOTE: openscad is not preinstalled; either add a setup step or run in a container.
+      - name: Print instructions
+        run: |
+          echo "Install OpenSCAD on the runner or use a container action, then run make:"
+          echo "  make -C scripts all VERSION=${GITHUB_REF_NAME}"

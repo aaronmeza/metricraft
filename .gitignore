@@ -1,0 +1,17 @@
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Build & releases
+**/stl/*.stl
+**/dist/*
+**/validation/results/*
+**/3mf/*.3mf.user
+
+# Python envs
+.venv/
+__pycache__/

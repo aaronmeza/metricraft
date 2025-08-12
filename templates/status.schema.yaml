@@ -1,0 +1,31 @@
+
+# templates/status.schema.yaml
+# Minimal schema for status.yaml files under each product folder
+type: object
+required: [active, version, stage]
+properties:
+  active:
+    type: boolean
+  version:
+    type: string
+    description: Current working version (semver)
+  stage:
+    type: string
+    enum: [design, validation, release, archived]
+  variant:
+    type: string
+  dims:
+    type: object
+    properties:
+      od: {type: number}
+      width: {type: number}
+      bore: {type: number}
+  ams_safe:
+    type: boolean
+  license:
+    type: string
+  distribution:
+    type: string
+    enum: [free-nc, paid]
+  scad_private:
+    type: boolean

@@ -1,0 +1,12 @@
+active: true
+ams_safe: true
+dims:
+  bore: 55
+  od: 199
+  width: 67
+distribution: free-nc
+license: CC BY-NC 4.0
+scad_private: true
+stage: design
+variant: split-hub-official
+version: v0.1.0
