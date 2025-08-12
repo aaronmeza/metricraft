@@ -1,0 +1,9 @@
+[submodule "lib/vendor/threadlib"]
+	path = lib/vendor/threadlib
+	url = https://github.com/adrianschlatter/threadlib.git
+[submodule "lib/vendor/scad-utils"]
+	path = lib/vendor/scad-utils
+	url = https://github.com/OskarLinde/scad-utils.git
+[submodule "lib/vendor/list-comprehension-demos"]
+	path = lib/vendor/list-comprehension-demos
+	url = https://github.com/openscad/list-comprehension-demos.git
