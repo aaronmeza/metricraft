@@ -72,6 +72,7 @@ module spool_flange(side="left"){
                 // (keep your existing key logic here)
             }
         }
+}
 
 // Desiccant lid (external thread stub)
 module desiccant_lid_top(){
