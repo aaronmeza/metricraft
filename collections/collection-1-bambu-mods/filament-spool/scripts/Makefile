@@ -1,8 +1,9 @@
 
 # Makefile — filament-spool
 REPO_ROOT := $(shell git rev-parse --show-toplevel)
-# Make OpenSCAD find our wrapper and vendor libs no matter the CWD
-export OPENSCADPATH := $(REPO_ROOT)/lib:$(REPO_ROOT)/lib/vendor/threadlib:$(REPO_ROOT)/lib/vendor/scad-utils:$(REPO_ROOT)/lib/vendor/list-comprehension-demos:$(REPO_ROOT)/lib/vendor/thread_profile
+export OPENSCADPATH := $(REPO_ROOT)/lib:$(REPO_ROOT)/lib/vendor
+
+
 
 OPENSCAD ?= openscad
 VERSION  ?= v0.1.0
