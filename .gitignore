@@ -5,6 +5,7 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
+tmp/
 
 # Build & releases
 **/stl/*.stl

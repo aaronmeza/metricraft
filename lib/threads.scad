@@ -19,8 +19,7 @@
 // - We compute designators like "M58x3" for metric threads. Adjust if using other families.
 
 // Include vendor threadlib
-use <vendor/threadlib/threadlib.scad>;
-
+include <vendor/threadlib/threadlib.scad>
 // Helper: construct metric designator (e.g., M58x3)
 function mc_metric_designator(major, pitch) = str("M", major, "x", pitch);
 

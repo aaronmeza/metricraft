@@ -1,7 +1,7 @@
 
 // filament_spool.scad — v0.1.0 scaffold
 // AMS‑safe 199 × 67 × 55 (OD × width × bore), split‑hub official-style
-use <../../lib/threads.scad>  // provide your preferred threads library here
+include <threads.scad>
 
 /*************** Parameters ***************/
 spool_od        = 199;
