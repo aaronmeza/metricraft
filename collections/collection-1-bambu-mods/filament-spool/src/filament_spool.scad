@@ -20,7 +20,6 @@ clip_slot_w     = 3.0;
 clip_gap        = 0.6;
 label_deboss    = 0.6;
 logo_badge_r    = 12;
-USE_THREADS_LIB = false; // flip true when threads library is available
 
 // Part selector
 part = is_undef(part) ? "flange_left" : part;
@@ -51,31 +50,49 @@ module spool_flange(side="left"){
                 filament_clip_slot(thickness=flange_thk+0.2);
     }
     hub_len = spool_width/2 - 2;
-    translate([0,0,flange_thk]) 
+    translate([0,0,flange_thk])
         difference(){
-            round_cylinder(d=hub_bore_id+16, h=hub_len);
-            if(side=="left"){
-                // pockets
+            // solid hub sleeve (OD slightly larger than thread crest)
+            cylinder(d=thread_major + 2*lid_wall + 2, h=hub_len, $fn=120);
+
+            // threaded cavity we subtract
+            // start a little above Z=0 to avoid razor-thin bases
+            translate([0,0,1]){
+                turns = floor((hub_len - 2) / thread_pitch);
+                mc_internal_tap(major=thread_major, pitch=thread_pitch, turns=turns);
+            }
+
+            // keep your interlock features as subtractive or additive as needed
+            if (side=="left"){
+                // subtract female pockets (leave as you have it)
                 translate([0,0,hub_len-3]) interlock_keys(count=6, r=(hub_bore_id+8)/2);
             } else {
-                // keys (positive) — simplified scaffold
+                // subtract relief for male keys (if you’re modeling them as positive on the right half)
+                // or add the keys in a union() before the difference if you prefer.
+                // (keep your existing key logic here)
             }
         }
-}
 
 // Desiccant lid (external thread stub)
 module desiccant_lid_top(){
-    h = lid_depth;
-    od = thread_major + 2*lid_wall;
-    difference(){
-        round_cylinder(d=od, h=h);
-        translate([0,0,1]) round_cylinder(d=od-2*lid_wall, h=h);
-    }
-    if (USE_THREADS_LIB){
-        // thread_external(d=thread_major-0.40, pitch=thread_pitch, length=h-2);
+    h  = lid_depth;                               // total lid height
+    od = thread_major + 2*lid_wall;               // outer diameter of the cap body
+    turns = floor((h - 2) / thread_pitch);        // thread turns that fit within h
+
+    union(){
+        // Hollow cap shell
+        difference(){
+            cylinder(d=od, h=h, $fn=120);
+            translate([0,0,1]) cylinder(d=od - 2*lid_wall, h=h, $fn=120);
+        }
+        // External thread wrapped around the cap
+        // (adds thread ribs at ~thread_major diameter)
+        mc_external_thread(major=thread_major, pitch=thread_pitch, turns=turns);
     }
 }
-module desiccant_lid_bottom(){ desiccant_lid_top(); }
+
+module desiccant_lid_bottom(){ desiccant_lid_top(); } // symmetric for scaffold
+
 
 // Switch
 if (part=="flange_left")       spool_flange("left");

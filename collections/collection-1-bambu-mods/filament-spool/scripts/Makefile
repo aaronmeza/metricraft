@@ -10,4 +10,9 @@ $(OUT)/filament-spool-%-$(VERSION).stl: $(SCAD)
 	$(OPENSCAD) -o $@ -D part="$*" $(SCAD)
 clean:
 	rm -f $(OUT)/*.stl
-.PHONY: all clean
+coupon:
+	$(OPENSCAD) -o ../stl/filament-spool-coupon-threadfit-$(VERSION).stl \
+		-D part="coupon_threadfit" ../src/filament_spool.scad
+
+
+.PHONY: all clean coupon
