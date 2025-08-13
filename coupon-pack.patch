@@ -1,0 +1,28 @@
+diff --git a/collections/collection-00-coupons/coupon-pack-v0.1.0/README.md b/collections/collection-00-coupons/coupon-pack-v0.1.0/README.md
+new file mode 100644
+--- /dev/null
++++ b/collections/collection-00-coupons/coupon-pack-v0.1.0/README.md
+@@
++# metricraft coupon-pack v0.1.0
++**What:** Parametric test coupons for PLA/PETG dialing on Bambu P1S.
++**Why:** Fast, repeatable XY, hole/shaft, snap-fit, and rail/dovetail validation before committing designs.
++**Printer/Filament:** Bambu P1S; draft prototypes on SUNLU (PLA/PETG), fit on ZYLtech PETG; final verify on Bambu profiles.
++**Slicer:** Bambu Studio 2.2.0.85 (macOS).
++**Settings (defaults):** PLA 0.28mm/2w/10% gyroid; PETG 0.24mm/3-4w/20% gyroid; see SCAD header for notes.
++**License:** CC BY-NC 4.0 for plate; SCAD source under MIT.
++**Safety:** Keep plates clear of rails/snap noses; avoid seams on bearing surfaces.
++
++## Print steps
++1. Render per-part STLs via `-D part="..."` (xy_ladder, hole_gauge, snapfit, dovetail_gauge, readme).
++2. Import STLs into Bambu Studio; name objects accordingly; plate name: `coupon-pack-v0.1.0`.
++3. Save `plates/bambu-studio/coupon-pack-v0.1.0.3mf`.
++4. Log measured deltas in ClickUp (custom fields: `filament_vendor`, `nozzle ΔT`, `flow_ratio`, `XY_expansion`).
++
++## Changelog
++- 0.1.0 — Initial release. Tokens: mc-rail-12, mc-dovetail-8. Adds README tile.
+diff --git a/collections/collection-01-datum-rail/.keep b/collections/collection-01-datum-rail/.keep
+new file mode 100644
+--- /dev/null
++++ b/collections/collection-01-datum-rail/.keep
+@@
+
