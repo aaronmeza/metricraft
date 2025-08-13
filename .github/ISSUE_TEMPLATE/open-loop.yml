@@ -1,0 +1,12 @@
+.github/ISSUE_TEMPLATE/open-loop.yml
+name: Open loop
+labels: [open-loop]
+body:
+  - type: textarea
+    id: what
+    attributes: { label: Task, description: "One clear verb-first line" }
+  - type: input
+    id: due
+    attributes: { label: Due date (optional) }
+
+
