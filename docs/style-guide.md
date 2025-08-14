@@ -168,7 +168,7 @@ Each released part/assembly must ship with a concise, remix‑friendly README.
 
 ## safety & license
 - Hot‑end/AMS proximity notes if heat‑adjacent.  
-- License(s): see repo LICENSE or project‑specific license.
+- License(s): see repo /docs/LICENSE or project‑specific license.
 
 ## changelog
 - See CHANGELOG below or linked file.
