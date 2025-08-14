@@ -43,3 +43,34 @@ glossary-check:
 
 .PHONY: docs-checks
 docs-checks: glossary-check docs-templates-check
+
+# Verify DECISIONS.md is up to date (for CI and local)
+.PHONY: check-decisions-index
+check-decisions-index:
+	@$(MAKE) -s decisions-index
+	@# Fail if the index changed during regeneration
+	@git diff --quiet -- docs/DECISIONS.md || ( \
+	  echo "docs/DECISIONS.md is out of date. Run 'make decisions-index' and commit." >&2; \
+	  git --no-pager diff -- docs/DECISIONS.md; \
+	  exit 1 )
+
+# Create a new decision file with today's date and a slug: make new-decision SLUG=materials-policy
+.PHONY: new-decision
+new-decision:
+	@[ -n "$(SLUG)" ] || (echo "Usage: make new-decision SLUG=my-decision-slug" >&2; exit 2)
+	@d=$$(date +%F); \
+	f="docs/decisions/$$d-$(SLUG).md"; \
+	test -e "$$f" && { echo "$$f already exists" >&2; exit 3; } || true; \
+	echo "# $(SLUG)"                                  > "$$f"; \
+	echo ""                                           >> "$$f"; \
+	echo "- **Date:** $$d"                            >> "$$f"; \
+	echo "- **Status:** Proposed | Accepted | Superseded" >> "$$f"; \
+	echo "- **Context:** <why this came up>"          >> "$$f"; \
+	echo "- **Decision:** <one clear sentence>"       >> "$$f"; \
+	echo "- **Rationale:** <tradeoffs>"               >> "$$f"; \
+	echo "- **Links:** </docs/specs/... or PRs>"      >> "$$f"; \
+	echo ""                                           >> "$$f"; \
+	echo "## Details"                                 >> "$$f"; \
+	echo ""                                           >> "$$f"; \
+	$(MAKE) -s decisions-index; \
+	echo "Created $$f and refreshed DECISIONS.md"

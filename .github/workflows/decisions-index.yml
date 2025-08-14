@@ -1,0 +1,25 @@
+name: decisions-index
+on:
+  pull_request:
+    paths:
+      - "docs/decisions/**.md"
+      - "docs/DECISIONS.md"
+      - "Makefile"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Regenerate DECISIONS.md
+        run: make -s decisions-index
+      - name: Verify index is current
+        run: |
+          git diff --quiet -- docs/DECISIONS.md || {
+            echo "::error file=docs/DECISIONS.md::Index is out of date. Run 'make decisions-index' and commit." >&2
+            git --no-pager diff -- docs/DECISIONS.md
+            exit 1
+          }
