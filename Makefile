@@ -1,9 +1,6 @@
 # Rebuild DECISIONS.md whenever a decision file changes
 DECISION_FILES := $(shell ls -1 docs/decisions/*.md 2>/dev/null || true)
 
-.PHONY: decisions-index
-decisions-index: docs/DECISIONS.md
-	@echo "Updated docs/DECISIONS.md"
 
 docs/DECISIONS.md: $(DECISION_FILES) Makefile
 	@set -e; \
@@ -26,6 +23,9 @@ docs/DECISIONS.md: $(DECISION_FILES) Makefile
 	fi; \
 	mv $$outfile docs/DECISIONS.md
 
+.PHONY: decisions-index
+decisions-index: docs/DECISIONS.md
+	@echo "Updated docs/DECISIONS.md"
 
 .PHONY: docs-templates-check
 docs-templates-check:
@@ -34,3 +34,12 @@ docs-templates-check:
 	@[ -f docs/templates/readme.md ] || (echo "missing: docs/templates/readme.md" && exit 1)
 	@[ -f docs/templates/release-checklist.md ] || (echo "missing: docs/templates/release-checklist.md" && exit 1)
 	@echo "docs templates: OK"
+
+
+.PHONY: glossary-check
+glossary-check:
+	@bash scripts/glossary-check.sh
+
+
+.PHONY: docs-checks
+docs-checks: glossary-check docs-templates-check
