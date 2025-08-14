@@ -198,6 +198,23 @@ Each released part/assembly must ship with a concise, remix‑friendly README.
 
 ---
 
+## Licensing (docs vs. models)
+
+**Docs**  
+All content under `/docs` is licensed **CC BY 4.0**. See `/docs/LICENSE` for scope, attribution format, and links to the legal code.
+
+**Models & print assets**  
+STL/3MF files and product photos/renders are **not** covered by `/docs/LICENSE`. They follow the project’s default stance: **Remixes allowed / Non-Commercial** unless a model explicitly overrides this in its README or an adjacent `LICENSE` file (and on MakerWorld).
+
+**Code & scripts**  
+Code (including SCAD libraries and shell scripts) follows the repository’s root license unless a subfolder states otherwise.
+
+**Publishing rule of thumb**  
+- State the applicable license in each part README and match it on MakerWorld.  
+- If a license changes (docs, models, or code), record the change in an ADR and the part CHANGELOG.
+
+---
+
 ## Templates index
 
 * `/docs/templates/readme.md`

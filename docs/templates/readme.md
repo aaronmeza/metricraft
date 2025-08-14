@@ -25,7 +25,8 @@
 
 ## safety & license
 - Hot‑end/AMS proximity notes if heat‑adjacent.  
-- License(s): see repo LICENSE or project‑specific license.
+- License: (models) Remixes allowed / Non-Commercial unless overridden.
+- Docs follow CC BY 4.0; see `/docs/LICENSE`.
 
 ## changelog
 - See CHANGELOG below or linked file.
