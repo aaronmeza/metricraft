@@ -153,15 +153,16 @@ Use this as the single source of truth for the Metricraft project. It’s tailor
 * **2025‑08‑12** — MakerWorld is the **primary distribution**; others equal weight later. — Rationale: Bambu ecosystem alignment.
 * **2025‑08‑11** — Desiccant canister remix: **allow remixes; non‑commercial**; start at **v1.0**; no open‑port variant yet. — Rationale: translucency + AMS drying focus.
 
-### Open Questions
+\$1
 
-* Finalize clearance table that maps *mc‑dovetail‑8* fits to PLA vs PETG shrinkage.
-* Decide on thread library vendor pinning to avoid OpenSCAD version drift.
-* Confirm default project license (CC BY‑NC vs BY‑NC‑SA) and document exceptions per model.
-* Define “print‑order checklist” template per SKU (supports MakerWorld description).
-* Cloudflare  for DNS + CDN, and pick static site generator for docs (Astro/Docusaurus).
+### Open Loops — To Complete
 
----
+* [ ] Add `.github/pull_request_template.md` mirroring the repo’s PR checklist.
+* [ ] Add `.editorconfig` for whitespace/indentation and file defaults.
+* [ ] Add `.gitattributes` to normalize diffs and attributes (e.g., treat `*.stl` and `*.3mf` as binary; `*.scad` as text; set `* text=auto`).
+* [ ] Add `LICENSE` file reflecting **Remix allowed / Non‑Commercial** (e.g., **CC BY‑NC 4.0**), and document any per‑model exceptions.
+
+\$2
 
 ## 2) Memory One‑Liners — ready to paste
 
@@ -174,7 +175,7 @@ Use this as the single source of truth for the Metricraft project. It’s tailor
 
 ### Naming & Style
 
-* Remember this: Metricraft uses **all-lowercase-hyphens** for files & SKUs; versions follow **semver**.
+* Remember this: Metricraft uses **all-lowercase-hyphens** for files, SKUs, and MakerWorld titles; versions follow **semver**.
 * Remember this: Project tone in docs is concise, technical, and remix‑friendly.
 
 ### Tech & Standards
