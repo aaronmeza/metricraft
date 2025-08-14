@@ -174,7 +174,7 @@ Use this as the single source of truth for the Metricraft project. It’s tailor
 
 ### Naming & Style
 
-* Remember this: Metricraft uses **all-lowercase-hyphens** for files, SKUs, and MakerWorld titles; versions follow **semver**.
+* Remember this: Metricraft uses **all-lowercase-hyphens** for files & SKUs; versions follow **semver**.
 * Remember this: Project tone in docs is concise, technical, and remix‑friendly.
 
 ### Tech & Standards
