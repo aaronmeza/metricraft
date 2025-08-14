@@ -32,7 +32,7 @@
 ## File & folder conventions
 
 * **Filenames:** `all-lowercase-hyphens.md` (e.g., `bambu-ams-setup.md`).
-* **Paths inside ************`/docs`************:**
+* **Paths inside `/docs`:**
 
   * `/docs/style-guide.md` – this file
   * `/docs/glossary.md` – shared terms and definitions
@@ -62,7 +62,7 @@ Example: /docs/decisions/2025-08-14-ams-2-pro-drying-material.md
 * **Diagrams:** Use Mermaid when a diagram clarifies intent.
 
 ```mermaid
-direction LR
+flowchart LR
 A[Design intent] --> B[Coupons]
 B --> C[Slice overrides]
 C --> D[Release]
