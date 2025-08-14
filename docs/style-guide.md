@@ -205,4 +205,6 @@ Each released part/assembly must ship with a concise, remix‑friendly README.
 * `/docs/templates/adr.md`
 * `/docs/templates/release-checklist.md`
 
-> **Next:** Create these templates (see index above) and seed `/docs/glossary.md` with core terms (e.g., `datum‑rail`, `mc‑rail‑12`, `mc‑dovetail‑8`).
+### Template locations
++Use **`docs/templates/`** for documentation templates (README, changelog, ADR, release checklist).  
++Use **`/templates/`** (repo root) for product/publishing artifacts (MakerWorld descriptions, RFQs, manufacturing briefs).
