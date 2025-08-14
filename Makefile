@@ -25,3 +25,12 @@ docs/DECISIONS.md: $(DECISION_FILES) Makefile
 		echo "- (none yet)" >> $$outfile; \
 	fi; \
 	mv $$outfile docs/DECISIONS.md
+
+
+.PHONY: docs-templates-check
+docs-templates-check:
+	@[ -f docs/templates/adr.md ] || (echo "missing: docs/templates/adr.md" && exit 1)
+	@[ -f docs/templates/changelog.md ] || (echo "missing: docs/templates/changelog.md" && exit 1)
+	@[ -f docs/templates/readme.md ] || (echo "missing: docs/templates/readme.md" && exit 1)
+	@[ -f docs/templates/release-checklist.md ] || (echo "missing: docs/templates/release-checklist.md" && exit 1)
+	@echo "docs templates: OK"
