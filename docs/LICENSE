@@ -1,0 +1,49 @@
+# Documentation License (docs/)
+
+**SPDX-License-Identifier:** CC-BY-4.0
+**Copyright:** © 2025 Aaron Meza
+
+**Scope**
+This license applies to all files under the `/docs` directory unless a file explicitly states a different license.
+
+---
+
+## License
+
+All documentation in `/docs` is licensed under the **Creative Commons Attribution 4.0 International** license (**CC BY 4.0**).
+
+* **You may:** share (copy, redistribute) and adapt (remix, transform, build upon) for any purpose, including commercial.
+* **You must:** provide appropriate attribution and indicate if changes were made.
+* **No additional restrictions:** don’t apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+**Full legal code:** [https://creativecommons.org/licenses/by/4.0/legalcode](https://creativecommons.org/licenses/by/4.0/legalcode)
+**Plain-language summary:** [https://creativecommons.org/licenses/by/4.0/](https://creativecommons.org/licenses/by/4.0/)
+
+---
+
+## Attribution format
+
+When reusing content from this `/docs` tree, include:
+
+> “Metricraft documentation (commit `<short-sha>`), © 2025 Aaron Meza — licensed CC BY 4.0.”
+> Link to the repo and the license; note what you changed.
+
+Template:
+
+```
+Title of work, from Metricraft docs (commit <short-sha>), © 2025 Aaron Meza.  
+Licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: <describe>.
+```
+
+---
+
+## Exceptions & related licenses
+
+* **Models & print assets** (`*.stl`, `*.3mf`, renders/photos) are **not** covered by this file. They follow the project’s default stance: **Remixes allowed / Non‑Commercial** unless a model explicitly states otherwise in its README or adjacent `LICENSE`.
+* **Code** (e.g., scripts, SCAD libraries) follows the repository’s root license unless a subfolder states otherwise.
+
+---
+
+## Trademarks
+
+Product names and logos (e.g., Bambu, AMS) may be trademarks of their respective owners. Use of these marks is for descriptive purposes and does not imply endorsement.

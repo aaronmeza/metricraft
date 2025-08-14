@@ -33,7 +33,7 @@ docs-templates-check:
 	@[ -f docs/templates/changelog.md ] || (echo "missing: docs/templates/changelog.md" && exit 1)
 	@[ -f docs/templates/readme.md ] || (echo "missing: docs/templates/readme.md" && exit 1)
 	@[ -f docs/templates/release-checklist.md ] || (echo "missing: docs/templates/release-checklist.md" && exit 1)
-	@echo "docs templates: OK"
+	@echo "✓ docs templates: OK"
 
 
 .PHONY: glossary-check
