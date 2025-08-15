@@ -1,7 +1,7 @@
 // metricraft-spool v1.0.4 (build004)
 // Bambu P1S + AMS — parametric reusable spool
 // Flange: A) heptachord (vertex‑mid)  ·  B) dragoncrest (geometric dragon)
-// Core: dogleg hub‑wall (55 mm desiccant chamber) + wall‑around‑voids + 3D helical lattice perforation
+// Core: dogleg hub‑wall (desiccant chamber = 55 mm ID)
 //
 // Units: millimeters. OpenSCAD trig = DEGREES.  $fn tuned for visual smoothness.
 
@@ -26,13 +26,14 @@ core_style        = "dogleg";       // fixed for this collection
 // Core — shared
 core_len          = spool_width - 2*flange_t;  // axial length between flanges
 
-// Core — DOGLEG hub wall (2D wall path)
+// Core — DOGLEG hub wall (MVP)
 vessel_wall_t     = 2.4;       // constant hub‑wall thickness (target ~2.4)
-baffle_count      = 3;         // hepta theme
-baffle_rot_deg    = 180/7;     // aesthetic rotation so facets align
-baffle_dogleg_sweep_deg = 17;   // tangential sweep at inner end ("hook" angle)
+baffle_count      = 3;         // number of dog‑legs
+baffle_rot_deg    = 180/baffle_count; // aesthetic rotation so facets align
+baffle_dogleg_sweep_deg = 17;  // tangential sweep at inner end ("hook" angle)
 baffle_tip_gap    = 15.0;      // how far finger tips stop short of chamber center (mm)
-
+inner_r           = hub_id/2 + vessel_wall_t;   // inner keep radius (wall stays outside this)
+outer_r           = 62;        // OUTER bound where the wall lives (size to taste)
 // Dog‑leg VOID geometry controls (length‑driven)
 dogleg_slot_w         = 4.0;   // VOID width (air path)
 dog_start_overrun_mm  = 10;    // slot begins this far OUTSIDE the wall (guaranteed through‑cut)
@@ -40,15 +41,22 @@ dog_outer_run_mm      = 21;    // straight run from start toward the elbow
 dog_inner_run_mm      = 7;    // straight run from elbow toward the tip
 dog_elbow_bias_mm     = 1;     // + moves elbow toward tip (steals from outer, adds to inner)
 
-// Perforation — HELICAL lattice (3D cutter)
-helix_enable          = false;  // master switch for helical lattice
-helix_slot_w          = 1.8;   // lattice strand/slot thickness (radial)
-helix_slot_len        = 8.0;   // tangential size of the strip cross‑section (mm)
-helix_pitch_mm        = 12.0;  // axial rise per full revolution (mm / turn)
-helix_count           = 3;     // number of strands per handedness around the ring
-helix_dual_family     = true;  // true = cross‑lattice (both left & right)
-helix_phase_deg       = 0;     // rotate start phase of the strands
-helix_z_margin        = 1.2;   // keep‑clear at top/bottom (in addition to cam margin)
+// Perforation controls
+perforation_mode      = "holes";  // "holes" | "helix" | "none"
+// -- round radial drills (3D subtract after extrusion)
+hole_d                = 1.4;   // hole diameter (mm)
+hole_arc_pitch_deg    = 14;    // angular spacing between holes (deg)
+hole_rows             = 9;     // number of Z rows
+hole_row_dz           = 6.0;   // vertical spacing between rows (mm)
+hole_row_stagger_deg  = 0.5*hole_arc_pitch_deg; // alternate row phase
+hole_overrun_mm       = 0.8;   // how much each drill overshoots wall thickness
+hole_radial_bias      = 0;     // + pushes hole center outward, − inward (mm)
+
+// -- legacy helical lattice (kept as an option)
+helix_count           = 3;     // number of helical cuts around
+helix_w               = 1.6;   // width of each helical cut (mm)
+helix_turns           = 1.3;   // total twists across usable height (rev)
+helix_z_margin        = 0.8;   // extra vertical keep‑clear beyond cam margins
 
 // Keep‑clear for future quarter‑turn cam caps
 cam_z_margin          = 3.2;   // at both top and bottom of core wall
@@ -87,6 +95,19 @@ module capsule2d(p1,p2,w){
   union(){ polygon([A,B,C,D]); translate(p1) circle(w/2); translate(p2) circle(w/2); }
 }
 
+// Arc capsule along circle radius rr from angle a1→a2 (degrees), width w
+module arc_capsule2d(rr, a1, a2, w){
+  steps = max(10, floor(abs(a2-a1)/3));
+  for (k=[0:steps-1]){
+    a = a1 + (a2-a1)*k/steps;
+    b = a1 + (a2-a1)*(k+1)/steps;
+    hull(){
+      translate([rr*cos(a), rr*sin(a)]) circle(w/2);
+      translate([rr*cos(b), rr*sin(b)]) circle(w/2);
+    }
+  }
+}
+
 // Tapered capsule between two points (w1 at p1 → w2 at p2)
 module taper_capsule2d(p1,p2,w1,w2){
   u=vunit(vsub(p2,p1)); n=vperp(u);
@@ -97,9 +118,8 @@ module taper_capsule2d(p1,p2,w1,w2){
   union(){ polygon([A,B,C,D]); translate(p1) circle(w1/2); translate(p2) circle(w2/2); }
 }
 
-function regular_ngon_points(n,r,rot_deg=0)=[
-  for(i=[0:n-1]) let(a=rot_deg+360*i/n) [r*cos(a),r*sin(a)]
-];
+function regular_ngon_points(n,r,rot_deg=0)=
+  [ for(i=[0:n-1]) let(a=rot_deg+360*i/n) [r*cos(a),r*sin(a)] ];
 
 // --------------------------------------
 //       FLANGE — Heptachord (vertex‑mid)
@@ -133,11 +153,15 @@ module flange_heptachord(show_debug=false){
 
   module heptachord_web_2d(){
     union(){
+      // Heptagon ring
       difference(){ polygon(outer_hepta); polygon(inner_hepta); }
+      // Tie and hub rings
       ring(tie_r+tie_w/2,tie_r-tie_w/2);
       ring(r_hub_o,r_hub_i);
+      // Radial spokes
       for(i=[0:6]) taper_capsule2d(hepta_pts[i], hepta_to_rim[i], chord_w_outer_h, chord_w_outer_r);
       for(i=[0:6]) taper_capsule2d(hepta_pts[i], hepta_to_hub[i], chord_w_inner_h, chord_w_inner_c);
+      // Vertex‑mid chords (only)
       for(i=[0:6]){ j=(i+2)%7;
         m=[(hepta_pts[j][0]+hepta_pts[(j+1)%7][0])/2,(hepta_pts[j][1]+hepta_pts[(j+1)%7][1])/2];
         capsule2d(hepta_pts[i], m, chord_diag_w);
@@ -160,6 +184,8 @@ module flange_heptachord(show_debug=false){
 // --------------------------------------
 //     FLANGE — Dragoncrest (geometric dragon)
 // --------------------------------------
+// Low‑poly dragon “wireframe” bars arranged in balanced pairs.
+// The bars are POSITIVE material (wall path), not voids.
 module flange_dragoncrest(show_debug=false){
   r_outer=spool_od/2;
   r_inner=r_outer-rim_land_w;
@@ -170,25 +196,36 @@ module flange_dragoncrest(show_debug=false){
 
   web_w = 3.2;       // bar width of wireframe
 
-  module wire_segments_2d(segments,w){ for (s=segments) capsule2d(s[0], s[1], w); }
+  // --- helpers to draw polylines as constant‑width bars
+  module wire_segments_2d(segments,w){
+    for (s=segments) capsule2d(s[0], s[1], w);
+  }
   function segments_from_points(pts, closed=false) =
     closed ? [for(i=[0:len(pts)-1]) [pts[i], pts[(i+1)%len(pts)]]] : [for(i=[0:len(pts)-2]) [pts[i], pts[i+1]]];
 
+  // --- stylized low‑poly dragon made from a few polylines (head, spine, tail, jaw, horn)
   function dragon_polylines() = [
+    // head/jaw
     [[-0.35,0.10],[-0.18,0.12],[ -0.02,0.09],[0.10,0.05],[0.18,0.00],[0.12,-0.04],[0.00,-0.02],[-0.10,0.02],[-0.22,0.06]],
     [[0.12,-0.04],[0.18,-0.10],[0.24,-0.17],[0.28,-0.24],[0.20,-0.26],[0.14,-0.20],[0.10,-0.12]],
+    // eye ridge
     [[-0.10,0.06],[0.00,0.10],[0.08,0.08]],
+    // neck + spine triangles
     [[-0.18,0.12],[-0.22,0.00],[-0.12,-0.18],[0.02,-0.32],[0.16,-0.40],[0.30,-0.46]],
+    // back spikes
     [[-0.12,-0.18],[-0.06,-0.08],[0.02,-0.20]],
     [[0.02,-0.32],[0.10,-0.22],[0.18,-0.34]],
+    // tail coil
     [[0.30,-0.46],[0.22,-0.60],[0.08,-0.70],[-0.06,-0.72],[-0.16,-0.66],[-0.22,-0.54],[-0.16,-0.46],[-0.04,-0.42],[0.08,-0.46]],
+    // fore‑leg suggestion
     [[-0.06,-0.40],[-0.14,-0.48],[-0.18,-0.58]]
   ];
 
   module dragon_wire_2d(){
-    r_center = (r_hub_o + r_inner)/2;  // radial center of usable band
-    band_span = (r_inner - r_hub_o);   // thickness of the annulus
-    motif_scale = 0.85*band_span;      // scale unit motif to band
+    // Place motif in the structural annulus, not at origin
+    r_center = (r_hub_o + r_inner)/2;                // radial center of usable band
+    band_span = (r_inner - r_hub_o);                 // thickness of the annulus
+    motif_scale = 0.85*band_span;                    // scale unit motif to band
 
     union(){
       for(rep=[0:1])
@@ -202,10 +239,13 @@ module flange_dragoncrest(show_debug=false){
 
   module dragon_web_2d(){
     union(){
+      // Core rings for structure
       ring(r_hub_o,r_hub_i);
       ring(tie_r+tie_w/2, tie_r-tie_w/2);
+      // Wireframe dragon bars (clipped to usable annulus)
       intersection(){
         dragon_wire_2d();
+        // keep only between hub boss and inner rim land
         difference(){ circle(r_inner-0.6); circle(r_hub_o+0.6); }
       }
     }
@@ -213,8 +253,8 @@ module flange_dragoncrest(show_debug=false){
 
   difference(){
     union(){
-      linear_extrude(height=rim_land_t) ring(r_outer,r_inner);
-      linear_extrude(height=flange_t)   dragon_web_2d();
+      linear_extrude(height=rim_land_t) ring(r_outer,r_inner); // roller band (solid)
+      linear_extrude(height=flange_t)   dragon_web_2d();       // web with wall bars
     }
     translate([0,0,-0.1]) cylinder(h=flange_t+rim_land_t+0.2, r=r_hub_i, $fn=96);
   }
@@ -224,115 +264,145 @@ module flange_dragoncrest(show_debug=false){
 }
 
 // --------------------------------------
-//          CORE — DOGLEG HUB WALL (2D)
+//          CORE — DOGLEG HUB WALL
 // --------------------------------------
 desiccant_r = hub_id/2;   // 55 mm chamber ID
 
 // Helper: thin annulus
 module _annulus(ro, ri){ difference(){ circle(ro); circle(ri); } }
 
-// 2D VOID centerlines — two capsules + rounded elbow per baffle
+// 2D union of VOID shapes (two capsules + rounded elbow per baffle)
+// Explicit, length-based control + elbow bias. Slots can extend beyond the wall.
 module dogleg_voids_2d(n=baffle_count){
   r_in  = desiccant_r;
-  r_out = desiccant_r + vessel_wall_t;
+  r_out = desiccant_r + vessel_wall_t;   // outer edge of the wall band
 
+  // apply elbow bias (can be negative)
   outer_run = max(0, dog_outer_run_mm - dog_elbow_bias_mm);
   inner_run = max(0, dog_inner_run_mm + dog_elbow_bias_mm);
-  wv = dogleg_slot_w; // VOID width
+
+  wv = dogleg_slot_w; // slot width exactly as set
 
   union(){
     for(i=[0:n-1]){
       ang = baffle_rot_deg + i*360/n;              // degrees
-      r_start = r_out + dog_start_overrun_mm;      // begins outside wall
+
+      // centerline radii (start slightly outside the wall for guaranteed through‑cut)
+      r_start = r_out + dog_start_overrun_mm;      // begins outside the wall
       r_elbow = r_start - outer_run;               // after outer straight
       r_tip_t = r_elbow - inner_run;               // naive tip radius
-      r_tip   = max(r_in - baffle_tip_gap, r_tip_t); // keep clearance
+      r_tip   = max(r_in - baffle_tip_gap, r_tip_t); // clamp to maintain center clearance
 
-      p_out   = [ r_start*cos(ang), r_start*sin(ang) ];
-      p_elbow = [ r_elbow*cos(ang), r_elbow*sin(ang) ];
+      // points
+      p_out   = [ r_start*cos(ang),                      r_start*sin(ang) ];
+      p_elbow = [ r_elbow*cos(ang),                      r_elbow*sin(ang) ];
       p_tip   = [ r_tip*cos(ang + baffle_dogleg_sweep_deg),
                   r_tip*sin(ang + baffle_dogleg_sweep_deg) ];
 
+      // VOID geometry (two capsules + rounded elbow)
       capsule2d(p_out,  p_elbow, wv);
       capsule2d(p_elbow,p_tip,   wv);
       translate(p_elbow) circle(wv/2);
+
+       // echo effective lengths for debug
+       echo(str("dogleg#", i, " startR=", r_start, " elbowR=", r_elbow,
+                " tipR=", r_tip, " eff_outer=", r_start - r_elbow,
+                " eff_inner=", r_elbow - r_tip));
     }
   }
 }
 
-// AROUND‑VOID band: morphological tube of the voids (⨁t/2 ⊖ ⊖t/2)
+// ---------- B) Constant-width wall around those voids ----------
 module wall_around_voids_raw(){
+  // morphological “tube”: (voids ⊕ wall/2) ⊖ (voids ⊖ wall/2)
   difference(){
-    offset(+vessel_wall_t/2) dogleg_voids_2d();
-    offset(-vessel_wall_t/2) dogleg_voids_2d();
+    offset(delta= +vessel_wall_t/2) dogleg_voids_2d();
+    offset(delta= -vessel_wall_t/2) dogleg_voids_2d();
   }
 }
 
-// Clip that band to the annulus so it stays within the wall region
 module wall_around_voids_clipped(){
-  r_in  = desiccant_r-baffle_tip_gap*1.5;
-  r_out = desiccant_r + vessel_wall_t-.5;
+  // keep within [inner_clip, outer_clip]
+  inner_clip = inner_r - vessel_wall_t*10;  // generous interior clip
+  outer_clip = inner_r;                 // just inside the wall’s outer edge
   intersection(){
     wall_around_voids_raw();
-    _annulus(r_out+0.4, r_in-0.4); // small tolerance to ensure fusing
+    difference(){ circle(outer_clip); circle(inner_clip); }
   }
 }
 
-// FINAL 2D wall: annulus with through‑voids, PLUS the around‑void band
+// 2D: final hub-wall path = annulus + wrap band
 module hub_wall_path_2d(){
   r_in  = desiccant_r;
   r_out = desiccant_r + vessel_wall_t;
+  difference() {
+  union(){ _annulus(r_out, r_in); wall_around_voids_clipped(); };dogleg_voids_2d(); };
+  
+}
+
+// Optional 2D vents (legacy; not used when perforation_mode="holes")
+module wall_vents_2d(){
+  r_mid = desiccant_r + vessel_wall_t/2;
+  circ = 2*PI*r_mid;
+  cnt  = max(3, floor(circ / 6.0));   // legacy defaults
+  arc_span = 360 * (3.0 / circ);      // deg
+  w = vessel_wall_t + 0.6;            // ensure cut crosses full thickness
   union(){
-    difference(){ _annulus(r_out, r_in); dogleg_voids_2d(); } // through‑voids
-    wall_around_voids_clipped();                              // wrap band
-  }
-}
-
-// --------------------------------------
-//   HELICAL LATTICE — 3D perforation cutter
-// --------------------------------------
-module helical_lattice_cutter(height, r_in, r_out){
-  r_mid   = (r_in + r_out)/2;
-  turns   = height / helix_pitch_mm;                // revolutions over height
-  slicesN = max(40, ceil(abs(turns)*90));           // smooth twist
-
-  module helical_family(handed=1, phase=0){
-    union(){
-      for(i=[0:helix_count-1])
-        rotate([0,0, phase + i*360/helix_count])
-          linear_extrude(height=height, twist=handed*turns*360, slices=slicesN)
-            translate([r_mid,0,0])
-              square([helix_slot_len, helix_slot_w], center=true);
-    }
-  }
-
-  // clip to the wall band so we don't chew into the chamber or shell
-  intersection(){
-    difference(){
-      cylinder(h=height, r=r_out+0.6, $fn=$fn);
-      cylinder(h=height, r=r_in-0.6, $fn=$fn);
-    }
-    union(){
-      helical_family(+1, phase=helix_phase_deg);
-      if (helix_dual_family) helical_family(-1, phase=helix_phase_deg + 180/helix_count);
+    for(i=[0:cnt-1]){
+      ang = i*360/cnt;
+      arc_capsule2d(r_mid, ang - arc_span/2, ang + arc_span/2, w);
     }
   }
 }
 
-// 3D core wall with helical lattice and cam keep‑clear
+// ---- 3D perforators ----
+// Round radial drills (preferred)
+module perforation_radial_drills(){
+  r_mid = desiccant_r + vessel_wall_t/2 + hole_radial_bias;
+  cnt   = max(3, floor(360 / hole_arc_pitch_deg));
+  len   = vessel_wall_t + 2*hole_overrun_mm;   // across wall thickness plus overrun
+  // rows stacked in Z, staggered in angle for strength
+  for(row=[0:hole_rows-1]){
+    z = cam_z_margin + (row+1)*hole_row_dz;
+    if (z < core_len - cam_z_margin){
+      phase = (row % 2 == 1) ? hole_row_stagger_deg : 0;
+      for(i=[0:cnt-1]){
+        ang = phase + i*360/cnt;
+        rotate([0,0,ang])
+          translate([r_mid,0,z])
+            rotate([0,90,0])
+              cylinder(h=len, r=hole_d/2, center=true, $fn=28);
+      }
+    }
+  }
+}
+
+// Helical lattice (legacy option)
+module perforation_helix(){
+  usable_h = max(0.1, core_len - 2*cam_z_margin - 2*helix_z_margin);
+  r_mid = desiccant_r + vessel_wall_t/2;
+  translate([0,0,cam_z_margin+helix_z_margin])
+    for(i=[0:helix_count-1]){
+      ang0 = i*360/helix_count;
+      rotate([0,0,ang0])
+        translate([r_mid,0,0])
+          linear_extrude(height=usable_h, twist=helix_turns*360, slices=max(12, floor(usable_h*3)))
+            square([helix_w, vessel_wall_t + 1.2], center=true);
+    }
+}
+
+// 3D core wall (perforations applied post‑extrude)
 module core_dogleg_only(){
-  wall_h = max(0.2, core_len);
   difference(){
-    // Base wall geometry (2D path → 3D)
-    //
-   linear_extrude(height=wall_h) hub_wall_path_2d();
-
-    // Helical lattice subtraction (optional)
-    if (helix_enable){
-      cut_h = max(0.01, wall_h - 2*helix_z_margin);
-      translate([0,0,cam_z_margin + helix_z_margin])
-        helical_lattice_cutter(cut_h, desiccant_r, desiccant_r + vessel_wall_t);
-    }
+    // the wall itself
+    translate([0,0,cam_z_margin])
+      linear_extrude(height=max(0.2, core_len - 2*cam_z_margin))
+        hub_wall_path_2d();
+    // subtract perforations
+    if (perforation_mode == "holes")
+      perforation_radial_drills();
+    else if (perforation_mode == "helix")
+      perforation_helix();
   }
 }
 
@@ -353,8 +423,8 @@ module core_face_pocket(){
   }
 }
 module core_dogleg_final(){
-core_dogleg_only();
-  //difference(){ core_dogleg_only(); union(){ core_starter(); core_face_pocket(); } }
+  core_dogleg_only();
+    //difference(){ core_dogleg_only(); union(){ core_starter(); core_face_pocket(); } }
 }
 
 // --------------------------------------
@@ -379,7 +449,10 @@ module flange_by_style(){
     flange_dragoncrest();
 }
 
-module core_by_style(){ core_dogleg_final(); }
+module core_by_style(){
+  // single core for this collection
+  core_dogleg_final();
+}
 
 module assembly_preview(){
   color([0.15,0.15,0.18,0.75]) flange_by_style();
@@ -401,8 +474,8 @@ module assembly_preview(){
 // dogleg_step1_wrap_raw();
  //dogleg_step1_wrap_clip();
  //dogleg_step2_wall2d();
- //dogleg_step3_extrude();
+ dogleg_step3_extrude();
  //dogleg_step4_final();
 
 // Assembly:
- assembly_preview();
+ //assembly_preview();
