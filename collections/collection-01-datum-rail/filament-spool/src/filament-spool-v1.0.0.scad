@@ -321,11 +321,11 @@ module helical_lattice_cutter(height, r_in, r_out){
 
 // 3D core wall with helical lattice and cam keep‑clear
 module core_dogleg_only(){
-  wall_h = max(0.2, core_len - 2*cam_z_margin);
+  wall_h = max(0.2, core_len);
   difference(){
     // Base wall geometry (2D path → 3D)
-    translate([0,0,cam_z_margin])
-      linear_extrude(height=wall_h) hub_wall_path_2d();
+    //
+   linear_extrude(height=wall_h) hub_wall_path_2d();
 
     // Helical lattice subtraction (optional)
     if (helix_enable){
