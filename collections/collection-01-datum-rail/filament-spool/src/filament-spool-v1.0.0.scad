@@ -46,13 +46,13 @@ dog_elbow_bias_mm     = 2;     // + moves elbow toward tip (steals from outer, a
 // Perforation controls
 perforation_mode      = "holes";  // "holes" | "helix" | "none"
 // -- round radial drills (3D subtract after extrusion)
-hole_d                = 1.4;   // hole diameter (mm)
+hole_d                = 1.3;   // hole diameter (mm)
 hole_arc_pitch_deg    = 14;    // angular spacing between holes (deg)
 hole_rows             = 10;     // number of Z rows
 hole_row_dz           = 6.0;   // vertical spacing between rows (mm)
 hole_row_stagger_deg  = 0.5*hole_arc_pitch_deg; // alternate row phase
-hole_overrun_mm       = 0.8;   // how much each drill overshoots wall thickness
-hole_radial_bias      = 0;     // + pushes hole center outward, − inward (mm)
+hole_overrun_mm       = 1;   // how much each drill overshoots wall thickness
+hole_radial_bias      = .5;     // + pushes hole center outward, − inward (mm)
 
 // -- legacy helical lattice (kept as an option)
 helix_count           = 3;     // number of helical cuts around
@@ -133,10 +133,10 @@ module flange_heptachord(show_debug=false){
   r_hub_o=r_hub_i+6;
 
   hepta_r_ratio=0.62;    // location of heptagon ring (fraction of OD/2)
-  hepta_ring_w=6.0;      // width of the heptagon structural ring
-  chord_w_outer_h=5.0;   // spoke width at heptagon (to rim)
-  chord_w_outer_r=4.0;   // spoke width at rim end
-  chord_w_inner_h=5.0;   // spoke width at heptagon (to hub)
+  hepta_ring_w=7;      // width of the heptagon structural ring
+  chord_w_outer_h=2.0;   // spoke width at heptagon (to rim)
+  chord_w_outer_r=15.0;   // spoke width at rim end
+  chord_w_inner_h=7.0;   // spoke width at heptagon (to hub)
   chord_w_inner_c=4.0;   // spoke width at hub end
   chord_diag_w=3.6;      // width of chords
 
@@ -176,7 +176,7 @@ module flange_heptachord(show_debug=false){
       linear_extrude(height=rim_land_t) ring(r_outer,r_inner);
       linear_extrude(height=flange_t)   heptachord_web_2d();
     }
-    translate([0,0,-0.1]) cylinder(h=flange_t+rim_land_t+0.2, r=r_hub_i, $fn=96);
+    translate([0,0,-0.1]) cylinder(h=flange_t+rim_land_t+0.2, r=r_hub_i, $fn=128);
   }
 
   if(show_debug) color([1,0,0,0.25]) translate([0,0,rim_land_t])
@@ -258,7 +258,7 @@ module flange_dragoncrest(show_debug=false){
       linear_extrude(height=rim_land_t) ring(r_outer,r_inner); // roller band (solid)
       linear_extrude(height=flange_t)   dragon_web_2d();       // web with wall bars
     }
-    translate([0,0,-0.1]) cylinder(h=flange_t+rim_land_t+0.2, r=r_hub_i, $fn=96);
+    translate([0,0,-0.1]) cylinder(h=flange_t+rim_land_t+0.2, r=r_hub_i, $fn=128);
   }
 
   if(show_debug) color([1,0,0,0.25]) translate([0,0,rim_land_t])
@@ -353,10 +353,10 @@ module wall_around_voids_extruded(){
  
  }
  
-module dogleg_voids_3d(){
+module dogleg_voids_extruded(){
   translate([0,0,cam_z_margin*2])
       linear_extrude(height=max(0.2, core_len - 2*cam_z_margin))
-        dogleg_voids_2d();
+        dogleg_voids_clipped();
 }
  
 
@@ -382,16 +382,60 @@ translate([0,0,cam_z_margin*2])
   
 }
  
+ // === Perforate the extruded dog-leg baffles the same way as the annulus ===
+
+// 1) Generic drill field at a given mid-radius (reuses your hole_* tunables)
+module _radial_drills_at_radius(r_mid, orientation){
+  cnt = max(5, floor(360 / hole_arc_pitch_deg));
+  len = vessel_wall_t + 2*hole_overrun_mm;   // across wall + a little overrun
+  for (row = [0:hole_rows-1]){
+    z = cam_z_margin + (row+1)*hole_row_dz;
+    if (z < core_len - cam_z_margin){
+      phase = (row % 2 == 1) ? hole_row_stagger_deg : 0;
+      for (i = [0:cnt-1]){
+        ang = phase + i*360/cnt;
+        rotate([0,0,ang])
+          translate([r_mid,0,z])
+            rotate([orientation,90,0])
+              cylinder(h=len, r=hole_d/2, center=true, $fn=128);
+      }
+    }
+  }
+}
+
+// 2) Same drill field, at both the annulus mid-thickness AND the dog-leg band
+module perforation_radial_drills_both(){
+  // Annulus (mid of the constant-thickness wall)
+  _radial_drills_at_radius(desiccant_r + vessel_wall_t/2 + hole_radial_bias,00);
+
+  // Dog-leg wrap band hugs the OUTER edge of the annulus (≈ inner_r − ~0.6)
+  // Tweak the 0.6 if you adjust the clip in wall_around_voids_clipped().
+  _radial_drills_at_radius(desiccant_r - 5 + hole_radial_bias,90);
+  
+    // Dog-leg wrap band hugs the OUTER edge of the annulus (≈ inner_r − ~0.6)
+  // Tweak the 0.6 if you adjust the clip in wall_around_voids_clipped().
+  _radial_drills_at_radius(desiccant_r - 10 + hole_radial_bias,90+baffle_dogleg_sweep_deg);
+  _radial_drills_at_radius(desiccant_r - 14 + hole_radial_bias,90+baffle_dogleg_sweep_deg);
+}
+
+// 3) Wrap your existing dog-leg solid with perforations
+module dogleg_voids_3d_perforated(){
+  difference(){
+    wall_around_voids_extruded();                // <-- your current extruded/capped baffles
+    perforation_radial_drills_both(); // <-- subtract holes (same pattern as annulus)
+  }
+}
+
  
-// 2D: final hub-wall path = annulus + wrap band
-module hub_wall_path_2d(){
+ 
+ 
+// 3D: final hub-wall path = annulus + wrap band
+module full_hub(){
   r_in  = desiccant_r;
   r_out = desiccant_r + vessel_wall_t;
-  difference() {
-  union(){ annulus_extruded(); wall_around_voids_extruded(); };
-  dogleg_voids_3d();  };
-  dogleg_face_bottom();
-  dogleg_face_top();
+ union(){difference(){
+  union(){ annulus_extruded(); wall_around_voids_extruded(); };dogleg_voids_extruded();}
+  dogleg_face_top(); dogleg_face_bottom();};
 }
 
 // Optional 2D vents (legacy; not used when perforation_mode="holes")
@@ -425,7 +469,7 @@ module perforation_radial_drills(){
         rotate([0,0,ang])
           translate([r_mid,0,z])
             rotate([0,90,0])
-              cylinder(h=len, r=hole_d/2, center=true, $fn=28);
+              cylinder(h=len, r=hole_d/2, center=true, $fn=128);
       }
     }
   }
@@ -452,15 +496,15 @@ module perforation_helix(){
 
 // 3D core wall (perforations applied post‑extrude)
 module core_dogleg_only(){
+  
+  
+  translate([0,0,-cam_z_margin])
   difference(){
-    // the wall itself
-//    translate([0,0,cam_z_margin])
-//      linear_extrude(height=max(0.2, core_len - 2*cam_z_margin))
-//        hub_wall_path_2d();
-hub_wall_path_2d();
+
+   full_hub();
     // subtract perforations
     if (perforation_mode == "holes")
-      perforation_radial_drills();
+      perforation_radial_drills_both();
     else if (perforation_mode == "helix")
       perforation_helix();
   }
@@ -471,11 +515,11 @@ module core_starter(){
   r = desiccant_r - 2;
   zpos = core_len*0.25;
   translate([r,0,zpos]) rotate([0,starter_bore_angle,90])
-    cylinder(h=desiccant_r*2, r=starter_bore_d/2, center=true, $fn=64);
+    cylinder(h=desiccant_r*2, r=starter_bore_d/2, center=true, $fn=128);
 }
 module core_face_pocket(){
   translate([0,0, core_len-0.01]) union(){
-    cylinder(h=pocket_depth+0.2, r=pocket_d/2 + 0.1, $fn=96);
+    cylinder(h=pocket_depth+0.2, r=pocket_d/2 + 0.1, $fn=128);
     lug_r = pocket_d/2 + o_ring_clearance;
     for(n=[0:2]) rotate([0,0,n*120])
       translate([lug_r, -bayonet_lug_w/2, (pocket_depth-1.2)])
@@ -490,13 +534,14 @@ module core_dogleg_final(){
 // --------------------------------------
 //          DEBUG HELPERS (2D/3D)
 // --------------------------------------
-module dogleg_step0_slots(){      color([0.2,0.8,0.5,0.5]) dogleg_voids_3d(); }
+module dogleg_step0_slots(){      color([0.2,0.8,0.5,0.5]) dogleg_voids_3d_perforated(); }
 module dogleg_step1_wrap_raw(){   color([0.2,0.5,1,0.35]) wall_around_voids_raw(); }
 module dogleg_step1_wrap_clip(){  color([0.1,0.7,1,0.55]) wall_around_voids_clipped(); }
-module dogleg_step2_wall2d(){     color([0.95,0.75,0.12]) hub_wall_path_2d(); }
+module dogleg_step2_wall2d(){     color([0.95,0.75,0.12]) full_hub(); }
 module dogleg_step2b_wall3d(){    color([0.95,0.75,0.12]) wall_around_voids_extruded(); }
-module dogleg_step2c_wall3d(){    color([0.95,0.75,0.12]) annulus_extruded(); }
-module dogleg_stepx_faces(){      color([0.95,0.75,0.12]) dogleg_face_bottom();}
+module core_radial_drills(){    color([0.95,0.75,0.12]) perforation_radial_drills_both(); }
+
+module dogleg_voids(){           color([0.95,0.75,0.12]) dogleg_voids_3d_perforated(); }
 
 
 module dogleg_step3_extrude(){    color([0.95,0.75,0.12]) core_dogleg_only(); }
@@ -536,14 +581,13 @@ module assembly_preview(){
 
 // Core — DOGLEG + wall‑around‑voids + HELICAL lattice:
 //dogleg_step0_slots();
- //dogleg_step1_wrap_raw();
- ////dogleg_step1_wrap_clip();
- //dogleg_step2_wall2d();
-//dogleg_step2b_wall3d();
- 
- //dogleg_step3_extrude();
- //dogleg_stepx_faces();
-  dogleg_step4_final();
+//dogleg_step1_wrap_raw();
+//dogleg_step1_wrap_clip();
+//dogleg_step2b_wall3d(); // baffles?
+//dogleg_step2_wall2d();  // ?? hub no perforations?
+//core_radial_drills();   // the holes subtracted from the hub
+//dogleg_step3_extrude(); // final core; no spool flanges
+//dogleg_step4_final();
 
 // Assembly:
- //assembly_preview();
+assembly_preview();
