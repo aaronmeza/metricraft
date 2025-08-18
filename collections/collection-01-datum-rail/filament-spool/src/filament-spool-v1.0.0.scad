@@ -20,6 +20,7 @@ rim_land_t        = 2.6;       // roller track thickness
 hub_boss_w        = 6.0;       // flange hub boss ring radial width (r_hub_o = r_hub_i + hub_boss_w)
 
 // Flange selector
+// dragoncrest not designed yet
 flange_style      = "heptachord";   // "heptachord" | "dragoncrest"
 
 // Core selector (single core for this collection)
@@ -29,30 +30,30 @@ core_style        = "dogleg";       // fixed for this collection
 core_len          = spool_width - 2*flange_t;  // axial length between flanges
 
 // Core — DOGLEG hub wall
-vessel_wall_t     = 2.4;       // constant hub‑wall thickness (target ~2.4)
+vessel_wall_t     = 2.0;       // constant hub‑wall thickness (target ~2.4)
 baffle_count      = 3;         // number of dog‑legs (3 chosen for airflow)
-baffle_rot_deg    = 180/7;     // aesthetic rotation so facets align
-baffle_dogleg_sweep_deg = 11;  // tangential sweep at inner end ("hook" angle)
+baffle_rot_deg    = 180/baffle_count;     // aesthetic rotation so facets align
+baffle_dogleg_sweep_deg = 17;  // tangential sweep at inner end ("hook" angle)
 baffle_tip_gap    = 15.0;      // how far finger tips stop short of chamber center (mm)
 inner_r           = hub_id/2 + vessel_wall_t;   // inner keep radius (wall stays outside this)
 outer_r           = 62;        // OUTER bound where the wall lives (size to taste)
 // Dog‑leg VOID geometry controls (length‑driven)
 dogleg_slot_w         = 4.0;   // VOID width (air path)
-dog_start_overrun_mm  = 15;    // slot begins this far OUTSIDE the wall (guaranteed through‑cut)
+dog_start_overrun_mm  = 10;    // slot begins this far OUTSIDE the wall (guaranteed through‑cut)
 dog_outer_run_mm      = 21;    // straight run from start toward the elbow
-dog_inner_run_mm      = 22;    // straight run from elbow toward the tip
-dog_elbow_bias_mm     = 0;     // + moves elbow toward tip (steals from outer, adds to inner)
+dog_inner_run_mm      = 7;    // straight run from elbow toward the tip
+dog_elbow_bias_mm     = 2;     // + moves elbow toward tip (steals from outer, adds to inner)
 
 // Perforation controls
 perforation_mode      = "holes";  // "holes" | "helix" | "none"
 // -- round radial drills (3D subtract after extrusion)
-hole_d                = 2.3;   // hole diameter (mm)
+hole_d                = 1.3;   // hole diameter (mm)
 hole_arc_pitch_deg    = 14;    // angular spacing between holes (deg)
-hole_rows             = 3;     // number of Z rows
+hole_rows             = 10;     // number of Z rows
 hole_row_dz           = 6.0;   // vertical spacing between rows (mm)
 hole_row_stagger_deg  = 0.5*hole_arc_pitch_deg; // alternate row phase
-hole_overrun_mm       = 0.8;   // how much each drill overshoots wall thickness
-hole_radial_bias      = 0;     // + pushes hole center outward, − inward (mm)
+hole_overrun_mm       = 1;   // how much each drill overshoots wall thickness
+hole_radial_bias      = 0.3;     // + pushes hole center outward, − inward (mm)
 
 // -- helical lattice (optional)
 helix_count           = 3;     // number of helical cuts around
@@ -78,7 +79,7 @@ cam_lead_chamfer_mm   = 0.4;   // tiny edge break on lug leading edge
 cam_slot_inset        = 0.35;  // keep slot a hair away from boss edges
 
 // (B) Cover ↔ Flange (optional small cam around the bore)
-enable_cover_cam      = false; // set true to cut cover slots in flange & generate cover
+enable_cover_cam      = true; // set true to cut cover slots in flange & generate cover
 cov_cam_count         = 3;
 cov_cam_band_w        = 2.6;
 cov_cam_slot_len_deg  = 70;
@@ -211,7 +212,7 @@ module flange_heptachord(show_debug=false){
     if (enable_cover_cam)
       flange_cover_cam_slots_3d(r_hub_i + 0.35, r_hub_i + 0.35 + 4.2);
     // Bore
-    translate([0,0,-0.1]) cylinder(h=flange_t+rim_land_t+0.2, r=r_hub_i, $fn=96);
+    translate([0,0,-0.1]) cylinder(h=flange_t+rim_land_t+0.2, r=r_hub_i, $fn=128);
   }
 
   if(show_debug) color([1,0,0,0.25]) translate([0,0,rim_land_t])
@@ -358,7 +359,7 @@ module dogleg_voids_2d(n=baffle_count){
 module wall_around_voids_raw(){
   // morphological “tube”: (voids ⊕ wall/2) ⊖ (voids ⊖ wall/2)
   difference(){
-    offset(delta= +vessel_wall_t/2) dogleg_voids_2d();
+    offset(delta= +vessel_wall_t/2-.5) dogleg_voids_2d();
     offset(delta= -vessel_wall_t/2) dogleg_voids_2d();
   }
 }
@@ -378,10 +379,31 @@ module hub_wall_path_2d(){
   union(){ hub_annulus_2d(); wall_around_voids_clipped(); }
 }
 
+
+
+// 1) Generic drill field at a given mid-radius (reuses hole_* tunables)
+module _radial_drills_at_radius(r_mid = desiccant_r + vessel_wall_t/2 + hole_radial_bias,orientation=0){
+  cnt = max(5, floor(360 / hole_arc_pitch_deg));
+  len = vessel_wall_t + 2*hole_overrun_mm;   // across wall thickness + a little overrun
+  for (row = [0:hole_rows-1]){
+    z = cam_z_margin + (row+1)*hole_row_dz;
+    if (z < core_len - cam_z_margin){
+      phase = (row % 2 == 1) ? hole_row_stagger_deg : 0;
+      for (i = [0:cnt-1]){
+        ang = phase + i*360/cnt;
+        rotate([0,0,ang])
+          translate([r_mid,0,z])
+            rotate([orientation,90,0])
+              cylinder(h=len, r=hole_d/2, center=true, $fn=16);
+      }
+    }
+  }
+}
+
 // ---- 3D perforators ----
 // Round radial drills (preferred) — applied to BOTH annulus and dog‑leg band
-module perforation_radial_drills(){
-  r_mid = desiccant_r + vessel_wall_t/2 + hole_radial_bias;
+module perforation_radial_drills(r_mid = desiccant_r + vessel_wall_t/2 + hole_radial_bias,orientation=0){
+  //r_mid = desiccant_r + vessel_wall_t/2 + hole_radial_bias;
   cnt   = max(3, floor(360 / hole_arc_pitch_deg));
   len   = vessel_wall_t + 2*hole_overrun_mm;   // across wall thickness plus overrun
   // rows stacked in Z, staggered in angle for strength
@@ -392,12 +414,26 @@ module perforation_radial_drills(){
       for(i=[0:cnt-1]){
         ang = phase + i*360/cnt;
         rotate([0,0,ang])
-          translate([r_mid,0,z])
-            rotate([0,90,0])
+          translate([r_mid*2,0,z])
+            rotate([orientation,90,0])
               cylinder(h=len, r=hole_d/2, center=true, $fn=28);
       }
     }
   }
+}
+
+
+// 2) Same drill field, at both the annulus mid-thickness AND the dog-leg band
+module perforation_radial_drills_both(){
+  // Annulus (mid of the constant-thickness wall)
+  _radial_drills_at_radius(desiccant_r + vessel_wall_t/2 + hole_radial_bias,0);
+
+  // Perforations before elbow of dogleg
+  //_torus_at_radius(desiccant_r - 5);
+  
+    // Perorations past elbow of dogleg
+  //_torus_drills_at_radius(desiccant_r - 10);
+  _radial_drills_at_radius(desiccant_r - 13 + hole_radial_bias,90+baffle_dogleg_sweep_deg);
 }
 
 // Helical lattice (optional)
@@ -487,9 +523,9 @@ module core_cover_plate(){
   lug_w = cov_cam_band_w - 2*cov_cam_clear;
   lug_len = cov_cam_slot_len_deg - 4;
   // disk
-  difference(){ cylinder(h=cover_thick, r=r_cov, $fn=128); }
+  difference(){ cylinder(h=cover_thick, r=r_cov, $fn=32); }
   // sealing lip
-  translate([0,0,0]) cylinder(h=cover_lip_h, r=hub_id/2 + cover_lip_r_add, $fn=128);
+  translate([0,0,0]) cylinder(h=cover_lip_h, r=hub_id/2 + cover_lip_r_add, $fn=32);
   // lugs on the back
   translate([0,0,max(0.1, cover_thick - cov_cam_axial_t)])
     linear_extrude(height=cov_cam_axial_t)
@@ -518,7 +554,9 @@ module core_dogleg_only(){
     }
     // Perforations (shared settings) — they avoid the lug slabs because of cam_z_margin
     if (perforation_mode == "holes")
-      perforation_radial_drills();
+      perforation_radial_drills_both(); // change to "both" path
+      //_radial_drills_at_radius();
+      
     else if (perforation_mode == "helix")
       perforation_helix();
   }
@@ -533,7 +571,7 @@ module core_starter(){
 }
 module core_face_pocket(){
   translate([0,0, core_len-0.01]) union(){
-    cylinder(h=pocket_depth+0.2, r=pocket_d/2 + 0.1, $fn=96);
+    cylinder(h=pocket_depth+0.2, r=pocket_d/2 + 0.1, $fn=24);
     lug_r = pocket_d/2 + o_ring_clearance;
     for(n=[0:2]) rotate([0,0,n*120])
       translate([lug_r, -bayonet_lug_w/2, (pocket_depth-1.2)])
@@ -554,6 +592,9 @@ module dogleg_step2b_dogleg_band_only(){ color([0.95,0.45,0.12,0.9]) translate([
 module dogleg_step3_extrude(){ color([0.95,0.75,0.12,0.95]) core_dogleg_only(); }
 module dogleg_step4_final(){   core_dogleg_final(); }
 module hub_chamber_debug(){ color([0,0,0,0.35]) linear_extrude(height=0.4) difference(){ circle(desiccant_r+0.5); circle(desiccant_r-0.5); } }
+
+
+module perforation_cyliders(){ color([0.95,0.75,0.12,0.95]) perforation_radial_drills_both();}
 
 // ---------- CAM TEST COUPONS ----------
 // A small sector that contains one flange slot & one core lug to tune clearances.
@@ -615,7 +656,7 @@ module assembly_preview(){
 //           EXPORT/DEBUG SWITCHES
 // --------------------------------------
 // Flanges:
- flange_heptachord();
+ //flange_heptachord();
 // flange_dragoncrest();
 
 // Core — DOGLEG:
@@ -624,7 +665,8 @@ module assembly_preview(){
 // dogleg_step2a_annulus_only();
 // dogleg_step2b_dogleg_band_only();
 //dogleg_step3_extrude();
-//dogleg_step4_final();
+// perforation_cyliders();
+// dogleg_step4_final();
 
 // Cams — coupons & cover:
 // coupon_cam_slot_sector();
@@ -634,4 +676,4 @@ module assembly_preview(){
 
 
 // Assembly (optional):
-// assembly_preview();
+ assembly_preview();
