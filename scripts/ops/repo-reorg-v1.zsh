@@ -194,18 +194,15 @@ jobs:
 YML"
 fi
 
+
 # Makefile additions (append if missing)
 if ! grep -q '^models:' Makefile 2>/dev/null; then
-  run "cat >> Makefile <<'MK'
-
-models:
-\t./scripts/models/export.zsh
-
-web-build:
-\t( cd web/apps/www && true ) && ( cd web/apps/docs && true )
-
-MK"
+  {
+    printf '\nmodels:\n\t./scripts/models/export.zsh\n'
+    printf '\nweb-build:\n\t( cd web/apps/www && true ) && ( cd web/apps/docs && true )\n'
+  } >> Makefile
 fi
+
 
 # Stub export script
 if [[ ! -f "scripts/models/export.zsh" ]]; then
