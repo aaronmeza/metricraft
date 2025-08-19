@@ -2,7 +2,7 @@
 // P1S + AMS | Bambu Studio 2.2.0.85 | basement 50–60°F ~60% RH
 // Tokens: mc-rail-12, mc-dovetail-8
 // part: "all","all_220","xy_ladder","hole_gauge","snapfit","dovetail_gauge","readme","ams_readme"
-part = "all";
+part = "xy_ladder";
 $fn = 64;
 
 // ----------------- helpers -----------------

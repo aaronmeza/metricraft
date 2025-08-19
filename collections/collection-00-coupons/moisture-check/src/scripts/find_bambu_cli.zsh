@@ -3,8 +3,11 @@ set -euo pipefail
 typeset -a CANDIDATES
 CANDIDATES=(
   "/Applications/Bambu Studio.app/Contents/MacOS/bambu-studio"
+  "/Applications/Bambu Studio.app/Contents/MacOS/BambuStudio"
   "/Applications/BambuStudio.app/Contents/MacOS/bambu-studio"
+  "/Applications/BambuStudio.app/Contents/MacOS/BambuStudio"
   "$HOME/Applications/Bambu Studio.app/Contents/MacOS/bambu-studio"
+  "$HOME/Applications/Bambu Studio.app/Contents/MacOS/BambuStudio"
 )
 for p in $CANDIDATES; do
   [[ -x "$p" ]] && { print -r -- "$p"; exit 0 }
@@ -16,7 +19,7 @@ bundle_ids=(
   "com.bambulab.BambuStudioBeta"
 )
 for bid in $bundle_ids; do
-  app_path="$(/usr/bin/mdfind "kMDItemCFBundleIdentifier == " | head -n1 || true)"
+  app_path="$(/usr/bin/mdfind "kMDItemCFBundleIdentifier == $bid" | head -n1 || true)"
   if [[ -n "${app_path:-}" && -d "$app_path" ]]; then
     # Prefer bambu-studio, else whatever is executable in MacOS/
     bin_dir="$app_path/Contents/MacOS"
