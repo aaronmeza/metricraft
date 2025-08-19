@@ -1,0 +1,15 @@
+name = "metricraft-api"
+main = "src/index.ts"
+compatibility_date = "2025-08-15"
+
+[[kv_namespaces]]
+binding = "KV_SIGNED_URLS"
+id = "TBD"
+preview_id = "TBD"
+
+[[r2_buckets]]
+binding = "R2_PUBLIC_ASSETS"
+bucket_name = "metricraft-public"
+
+[vars]
+SIGNED_URL_TTL_SECONDS = "600"

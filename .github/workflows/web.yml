@@ -1,0 +1,10 @@
+name: web
+on:
+  push: { branches: [ main ] }
+  pull_request: {}
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo 'Web workflows stub (Pages projects configured in Cloudflare UI).'

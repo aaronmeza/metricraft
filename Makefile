@@ -74,3 +74,9 @@ new-decision:
 	echo ""                                           >> "$$f"; \
 	$(MAKE) -s decisions-index; \
 	echo "Created $$f and refreshed DECISIONS.md"
+
+models:
+	./scripts/models/export.zsh
+
+web-build:
+	( cd web/apps/www && true ) && ( cd web/apps/docs && true )

@@ -1,0 +1,10 @@
+name: worker
+on:
+  push: { branches: [ main ] }
+  pull_request: {}
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo 'Worker deploy handled by wrangler in later step.'
