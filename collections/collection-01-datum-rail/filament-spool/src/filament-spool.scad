@@ -6,6 +6,28 @@
 //
 // Units: millimeters. OpenSCAD trig = DEGREES.  $fn tuned for visual smoothness.
 
+
+// filament-spool.scad style and part selector (integrate this with other paths)
+// styles: heptachord | dragoncrest
+style = is_undef(style) ? "heptachord" : style;   // CLI: -D style="dragoncrest"
+which = is_undef(which) ? "flange" : which;       // CLI: -D which="core"
+
+use <style-map.scad>;
+
+module spool_part(which, style) {
+  if (which == "flange") flange(style);
+  else if (which == "core") core(style);
+  else if (which == "cover") cover(style);
+  else if (which == "cam_flange2core") cam_flange2core(style);
+  else if (which == "cam_cover2flange") cam_cover2flange(style);
+  else assert(false, str("unknown part: ", which));
+}
+
+spool_part(which, style);
+
+///////////////////////////////////////////////////////
+
+
 // --------------------------------------
 //               TOKENS
 // --------------------------------------
@@ -562,6 +584,30 @@ module core_dogleg_only(){
   }
 }
 
+module flange(style){
+  flange_heptachord(); // replace later - just for clean build
+}
+
+module core(style){
+  core_dogleg_final(); // replace later - just for clean build
+}
+
+
+module cover(style) {
+core_cover_plate(); // replace later - just for clean build
+}
+
+
+module cam_flange2core(style) {
+  core_cover_plate(); // replace later - just for clean build
+}
+
+
+module cam_cover2flange(style) {
+ core_cover_plate(); // replace later - just for clean build
+}
+
+
 // Access features into chamber (unchanged)
 module core_starter(){
   r = desiccant_r - 2;
@@ -656,7 +702,7 @@ module assembly_preview(){
 //           EXPORT/DEBUG SWITCHES
 // --------------------------------------
 // Flanges:
- //flange_heptachord();
+// flange_heptachord();
 // flange_dragoncrest();
 
 // Core — DOGLEG:
@@ -664,8 +710,8 @@ module assembly_preview(){
 // dogleg_step1_wall2d();
 // dogleg_step2a_annulus_only();
 // dogleg_step2b_dogleg_band_only();
-//dogleg_step3_extrude();
-// perforation_cyliders();
+// dogleg_step3_extrude();
+// perforation_cylinders();
 // dogleg_step4_final();
 
 // Cams — coupons & cover:
@@ -676,4 +722,4 @@ module assembly_preview(){
 
 
 // Assembly (optional):
- assembly_preview();
+// assembly_preview();

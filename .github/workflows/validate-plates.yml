@@ -1,0 +1,34 @@
+name: validate-plates
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "collections/**.3mf"
+  workflow_dispatch: {}
+
+jobs:
+  plate-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect changed 3MF files
+        id: diff
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git fetch origin ${{ github.event.pull_request.base.sha }} --depth=1
+            git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep -E '\.3mf$' || true
+          else
+            git ls-files '*.3mf'
+          fi | tee changed.txt
+          COUNT=$(wc -l < changed.txt | tr -d ' ')
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+      - name: Set up Python
+        if: steps.diff.outputs.count != '0'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run plate checks
+        if: steps.diff.outputs.count != '0'
+        run: |
+          chmod +x scripts/models/check_3mf.py
+          python3 scripts/models/check_3mf.py $(cat changed.txt)

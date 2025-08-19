@@ -1,0 +1,14 @@
+{
+  "scad": "src/filament-spool.scad",
+  "styles": ["heptachord", "dragoncrest"],
+  "parts": [
+    {"name":"flange", "which":"flange"},
+    {"name":"core",   "which":"core"},
+    {"name":"cover",  "which":"cover"},
+    {"name":"cams/flange2core",  "which":"cam_flange2core"},
+    {"name":"cams/cover2flange", "which":"cam_cover2flange"}
+  ],
+  "openscad": {
+    "fn": 96
+  }
+}
